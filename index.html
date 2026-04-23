@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="site.css?v=20260422b">
+    <link rel="stylesheet" href="site.css?v=20260423a">
   </head>
   <body>
     <div class="page-shell">
@@ -15,16 +15,231 @@
         <p class="eyebrow">ME 7751 Project 2</p>
         <h1>Compliant Finger Study</h1>
         <p class="hero-copy">
-          Explore the browser GUI directly in GitHub Pages, then open the paper
-          or the source code when you want the full project context.
+          This GitHub Pages site is the project hub for the tendon-driven compliant
+          finger study. It combines the live browser GUI, the final paper, the
+          slideshow PDF, and direct links to the main analytical and simulation
+          source files used in the comparison.
         </p>
         <div class="hero-actions">
-          <a class="button primary" href="#browser-gui">Open Browser GUI</a>
-          <a class="button secondary" href="paper/project2.pdf">Open project2.pdf</a>
-          <a class="button secondary" href="https://github.com/jessicasillus/Compliant-Mechanisms-Study/tree/main/finger_discrepancy_app">Desktop app source</a>
-          <a class="button secondary" href="https://github.com/jessicasillus/Compliant-Mechanisms-Study/tree/main/finger_sim_freecad">FreeCAD source</a>
+          <a class="button primary" href="#browser-gui">Launch Browser GUI</a>
+          <a class="button secondary" href="paper/project2.pdf">Open Paper</a>
+          <a class="button secondary" href="paper/project2_slides.pdf">Open Slides</a>
+          <a class="button secondary" href="#source-map">Browse Code</a>
+        </div>
+        <div class="hero-metrics">
+          <article class="hero-metric">
+            <p class="hero-metric-label">Mechanism</p>
+            <p class="hero-metric-value">4-joint TPU finger</p>
+          </article>
+          <article class="hero-metric">
+            <p class="hero-metric-label">Models</p>
+            <p class="hero-metric-value">1S PRBM, 20S PRBM, FEA</p>
+          </article>
+          <article class="hero-metric">
+            <p class="hero-metric-label">Browser range</p>
+            <p class="hero-metric-value">0 to 5 N</p>
+          </article>
+          <article class="hero-metric">
+            <p class="hero-metric-label">Delivered assets</p>
+            <p class="hero-metric-value">Paper, slides, code, GUI</p>
+          </article>
         </div>
       </header>
+
+      <section class="notice-strip">
+        The browser GUI focuses on the validated 0 to 5 N comparison window from the
+        staged FEA export. All bend values shown on this site are positive magnitudes
+        so the PRBM and FEA plots are easier to compare consistently.
+      </section>
+
+      <section class="card content-card">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Submission Assets</p>
+            <h2>Deliverables</h2>
+          </div>
+          <p class="section-copy">
+            The repository is organized so the report, slides, code, and browser GUI
+            all point to the same modeling workflow and the same staged FEA dataset.
+          </p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <p class="feature-eyebrow">Report</p>
+            <h3>Final Paper</h3>
+            <p>
+              The full project write-up covering motivation, analytical derivation,
+              FEA methodology, discrepancy analysis, and engineering conclusions.
+            </p>
+            <div class="link-row">
+              <a class="inline-link" href="paper/project2.pdf">Open PDF</a>
+            </div>
+          </article>
+          <article class="feature-card">
+            <p class="feature-eyebrow">Presentation</p>
+            <h3>Project Slides</h3>
+            <p>
+              Slideshow PDF for the same submission, uploaded into the repository so
+              the visual presentation is archived alongside the written paper.
+            </p>
+            <div class="link-row">
+              <a class="inline-link" href="paper/project2_slides.pdf">Open Slides</a>
+            </div>
+          </article>
+          <article class="feature-card">
+            <p class="feature-eyebrow">Interactive</p>
+            <h3>Browser GUI</h3>
+            <p>
+              GitHub Pages version of the comparison dashboard for shape overlays,
+              tip-response curves, and per-joint discrepancy tracking.
+            </p>
+            <div class="link-row">
+              <a class="inline-link" href="#browser-gui">Jump to GUI</a>
+            </div>
+          </article>
+          <article class="feature-card">
+            <p class="feature-eyebrow">Archive</p>
+            <h3>Repository Code</h3>
+            <p>
+              Direct access to the analytical script, the FreeCAD/CalculiX workflow,
+              the 20-spring reference model, and the desktop app source.
+            </p>
+            <div class="link-row">
+              <a class="inline-link" href="#source-map">View Source Map</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="source-map" class="card content-card">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Repository Map</p>
+            <h2>Main Source Files</h2>
+          </div>
+          <p class="section-copy">
+            These are the code entry points that define the reduced-order model,
+            the staged finite-element workflow, the distributed 20-spring reference,
+            and the local desktop comparison interface.
+          </p>
+        </div>
+        <div class="artifact-grid">
+          <article class="artifact-card">
+            <p class="feature-eyebrow">Analytical model</p>
+            <h3><code>Finger_PRBM.py</code></h3>
+            <p>
+              Implements torsional stiffness scaling, cable-force-to-moment mapping,
+              and 2D finger centerline reconstruction for the one-spring PRBM.
+            </p>
+            <div class="link-row">
+              <a class="inline-link" href="https://github.com/jessicasillus/Compliant-Mechanisms-Study/blob/main/finger_sim_freecad/Finger_PRBM.py">Open in GitHub</a>
+            </div>
+          </article>
+          <article class="artifact-card">
+            <p class="feature-eyebrow">FEA driver</p>
+            <h3><code>Finger_Sim_FreeCAD.py</code></h3>
+            <p>
+              Builds the 3D finger, creates the FEM study in FreeCAD, patches the
+              CalculiX input deck, and exports staged response data for comparison.
+            </p>
+            <div class="link-row">
+              <a class="inline-link" href="https://github.com/jessicasillus/Compliant-Mechanisms-Study/blob/main/finger_sim_freecad/Finger_Sim_FreeCAD.py">Open in GitHub</a>
+            </div>
+          </article>
+          <article class="artifact-card">
+            <p class="feature-eyebrow">Distributed reference</p>
+            <h3><code>Finger_Sim_20_Springs.py</code></h3>
+            <p>
+              MuJoCo-based distributed 20-spring model used to compare smoother
+              compliance distribution against the simpler lumped PRBM.
+            </p>
+            <div class="link-row">
+              <a class="inline-link" href="https://github.com/jessicasillus/Compliant-Mechanisms-Study/blob/main/finger_sim_freecad/Finger_Sim_20_Springs.py">Open in GitHub</a>
+            </div>
+          </article>
+          <article class="artifact-card">
+            <p class="feature-eyebrow">Desktop interface</p>
+            <h3><code>Finger_Discrepancy_App.py</code></h3>
+            <p>
+              Local Tkinter and Matplotlib application for interactive discrepancy
+              analysis using the same analytical and FEA-backed data pipeline.
+            </p>
+            <div class="link-row">
+              <a class="inline-link" href="https://github.com/jessicasillus/Compliant-Mechanisms-Study/blob/main/finger_discrepancy_app/Finger_Discrepancy_App.py">Open in GitHub</a>
+            </div>
+          </article>
+          <article class="artifact-card">
+            <p class="feature-eyebrow">Bundled data</p>
+            <h3><code>Finger_Sim_VM2_FEA_stages.csv</code></h3>
+            <p>
+              Staged FEA export reused by the browser GUI and the desktop app so the
+              comparison dashboard does not depend on rerunning FreeCAD in the browser.
+            </p>
+            <div class="link-row">
+              <a class="inline-link" href="https://github.com/jessicasillus/Compliant-Mechanisms-Study/blob/main/finger_sim_freecad/Finger_Sim_VM2_FEA_stages.csv">Open in GitHub</a>
+            </div>
+          </article>
+          <article class="artifact-card">
+            <p class="feature-eyebrow">Submission files</p>
+            <h3><code>paper/</code></h3>
+            <p>
+              Final report PDF, slideshow PDF, and a short paper-folder README so the
+              written deliverables remain easy to find from the repository root.
+            </p>
+            <div class="link-row">
+              <a class="inline-link" href="https://github.com/jessicasillus/Compliant-Mechanisms-Study/tree/main/paper">Open in GitHub</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="card content-card">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Engineering Flow</p>
+            <h2>How The Pieces Fit Together</h2>
+          </div>
+          <p class="section-copy">
+            The project is built as a connected pipeline instead of a disconnected set
+            of files: analytical modeling, nonlinear FEA, data export, and interactive
+            comparison all feed into one final discrepancy study.
+          </p>
+        </div>
+        <div class="workflow-grid">
+          <article class="step-card">
+            <p class="step-number">01</p>
+            <h3>Analytical PRBM</h3>
+            <p>
+              The one-spring model uses thickness-based torsional stiffness scaling and
+              a cable moment arm to estimate joint bending and overall finger curl.
+            </p>
+          </article>
+          <article class="step-card">
+            <p class="step-number">02</p>
+            <h3>Distributed Comparison</h3>
+            <p>
+              The 20-spring reference keeps the same mechanism intent but spreads
+              compliance more smoothly, helping isolate the effect of hinge lumping.
+            </p>
+          </article>
+          <article class="step-card">
+            <p class="step-number">03</p>
+            <h3>FreeCAD + CalculiX</h3>
+            <p>
+              The FEA model resolves the compliant joint volume directly and exports
+              stage-by-stage joint and segment data for downstream comparison.
+            </p>
+          </article>
+          <article class="step-card">
+            <p class="step-number">04</p>
+            <h3>Interactive Comparison</h3>
+            <p>
+              The browser and desktop GUIs plot geometry, tip response, and joint-level
+              discrepancy so the PRBM-versus-FEA gap can be interpreted visually.
+            </p>
+          </article>
+        </div>
+      </section>
 
       <section id="browser-gui" class="card controls-card">
         <div class="section-head">
@@ -33,9 +248,9 @@
             <h2>Model controls</h2>
           </div>
           <p class="section-copy">
-            Compare the 1-spring PRBM, 20-spring PRBM, bundled FEA stages,
-            directly in the browser. The browser GUI is capped at 5 N,
-            and bend values are shown as positive magnitudes.
+            Compare the 1-spring PRBM, 20-spring PRBM, and bundled FEA stages directly
+            in the browser. The browser GUI is capped at 5 N, and bend values are
+            shown as positive magnitudes.
           </p>
         </div>
 
@@ -99,7 +314,10 @@
             </div>
           </div>
           <svg id="response-plot" viewBox="0 0 520 340" role="img" aria-label="Tip angle response plot"></svg>
-          <p class="plot-note">The FEA curve uses the bundled stage CSV up to 5 N. All bend values shown here are positive magnitudes.</p>
+          <p class="plot-note">
+            The FEA curve uses the bundled stage CSV up to 5 N. All bend values shown
+            here are positive magnitudes.
+          </p>
         </article>
       </section>
 
@@ -140,24 +358,85 @@
         </div>
       </section>
 
+      <section class="card content-card">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Code Highlights</p>
+            <h2>Representative Snippets</h2>
+          </div>
+          <p class="section-copy">
+            Short excerpts from the actual project files are included here so the
+            GitHub page shows both the visualization layer and the underlying code
+            structure used to generate the comparison.
+          </p>
+        </div>
+        <div class="code-grid">
+          <article class="snippet-card">
+            <p class="feature-eyebrow">Finger_PRBM.py</p>
+            <h3>Thickness-scaled stiffness</h3>
+            <pre><code>def joint_torsional_stiffnesses_nmm_per_rad(
+    joint_thicknesses_mm=JOINT_THICKNESSES_MM,
+):
+    return tuple(
+        NOMINAL_JOINT_STIFFNESS_NMM_PER_RAD
+        * (float(joint_thickness_mm) / NOMINAL_JOINT_THICKNESS_MM) ** 3
+        for joint_thickness_mm in joint_thicknesses_mm
+    )</code></pre>
+          </article>
+          <article class="snippet-card">
+            <p class="feature-eyebrow">Finger_Sim_FreeCAD.py</p>
+            <h3>Matched FEA geometry build</h3>
+            <pre><code>def build_finger_shape():
+    solids = [add_box(0.0, BASE_BLOCK_LENGTH_MM, SEGMENT_HEIGHT_MM)]
+    joint_targets = []
+    cursor_x = BASE_BLOCK_LENGTH_MM
+    for joint_index, joint_thickness_mm in enumerate(
+        JOINT_THICKNESSES_MM, start=1
+    ):
+        solids.append(add_box(cursor_x, COMPLIANT_SEGMENT_LENGTH_MM, joint_thickness_mm))
+        solids.append(add_box(cursor_x + COMPLIANT_SEGMENT_LENGTH_MM,
+                              RIGID_SEGMENT_LENGTH_MM, SEGMENT_HEIGHT_MM))</code></pre>
+          </article>
+          <article class="snippet-card">
+            <p class="feature-eyebrow">Finger_Sim_20_Springs.py</p>
+            <h3>Distributed flexure chain</h3>
+            <pre><code>for i in range(N_LINKS):
+    for j in range(N_SUB):
+        A(get_ind() + f'&lt;body name="link{i+1}_f{j+1}" pos="{pos_x:.5f} 0 0"&gt;')
+        A(get_ind() + f'&lt;joint name="j{i+1}_{j+1}"
+            pos="0 0 {T_GAP[i]/2:.5f}"
+            stiffness="{js_sub:.5f}"
+            damping="{jd_sub:.5f}"/&gt;')</code></pre>
+          </article>
+        </div>
+      </section>
+
       <section class="card run-card">
         <div class="section-head compact">
           <div>
             <p class="section-eyebrow">Local Workflow</p>
-            <h2>Run the full desktop app</h2>
+            <h2>Run the project locally</h2>
           </div>
           <p class="section-copy">
-            GitHub Pages is great for the comparison dashboard, but the full Tkinter and FreeCAD workflow still runs locally.
+            GitHub Pages is the easiest way to review the comparison, but the full
+            project also includes the desktop app, the analytical scripts, and the
+            FreeCAD/CalculiX source for regeneration work.
           </p>
         </div>
         <pre><code>python -m pip install -r finger_discrepancy_app/requirements.txt
-python finger_discrepancy_app/Finger_Discrepancy_App.py</code></pre>
+python finger_discrepancy_app/Finger_Discrepancy_App.py
+
+python finger_sim_freecad/Finger_PRBM.py --plot-schedule
+python finger_sim_freecad/Finger_Sim_FreeCAD.py --help
+python finger_sim_freecad/Finger_Sim_20_Springs.py</code></pre>
         <p class="run-note">
-          The large `Finger_Sim_VM2_FEM.FCStd` document is intentionally not committed because it is too large for a normal GitHub upload.
+          The large <code>Finger_Sim_VM2_FEM.FCStd</code> document is intentionally not
+          committed because it is too large for a normal GitHub upload, but the
+          generated staged CSV and the main solver scripts are included here.
         </p>
       </section>
     </div>
 
-    <script src="site.js?v=20260422b"></script>
+    <script src="site.js?v=20260423a"></script>
   </body>
 </html>
