@@ -13,6 +13,7 @@ const EXPERIMENTAL_COLOR = "#2a8c53";
 const DISCREPANCY_COLOR = "#b42318";
 const AXIS_COLOR = "#6b5f58";
 const GRID_COLOR = "rgba(107, 95, 88, 0.14)";
+const GUI_MAX_FORCE_N = 5.0;
 
 const FEASTagerows = [
   { cableForceN: 0.0, jointBendsDeg: [0.0, 0.0, 0.0, 0.0] },
@@ -66,8 +67,9 @@ const VA_DENOM = VA_H ** 2 * VA_SUM_FLEX + VA_C_TENDON;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const JOINT_NAMES = ["Joint 1", "Joint 2", "Joint 3", "Joint 4"];
-const FEA_FORCES = FEASTagerows.map((row) => row.cableForceN);
-const MAX_FORCE = FEASTagerows[FEASTagerows.length - 1].cableForceN;
+const ACTIVE_FEA_STAGE_ROWS = FEASTagerows.filter((row) => row.cableForceN <= GUI_MAX_FORCE_N);
+const FEA_FORCES = ACTIVE_FEA_STAGE_ROWS.map((row) => row.cableForceN);
+const MAX_FORCE = ACTIVE_FEA_STAGE_ROWS[ACTIVE_FEA_STAGE_ROWS.length - 1].cableForceN;
 
 const EXPERIMENTAL_SERIES = graphExperimentalSeries();
 const EXPERIMENTAL_FIT = experimentalFitStats(EXPERIMENTAL_SERIES);
@@ -230,7 +232,7 @@ function interpolateFeaState(cableForceN) {
     interpolate1D(
       clampedForce,
       FEA_FORCES,
-      FEASTagerows.map((row) => row.jointBendsDeg[jointIndex]),
+      ACTIVE_FEA_STAGE_ROWS.map((row) => row.jointBendsDeg[jointIndex]),
     )
   ));
   return displayStateFromJointBends("FEA (CalculiX)", clampedForce, jointBendsDeg);
@@ -576,7 +578,7 @@ function renderResponsePlot(analytical, twentySpring, feaState, expPoint) {
   addCurve(twentyPoints, TWENTY_SPRING_COLOR, "8 6", 3);
   if (state.showFea) {
     addCurve(feaPoints, FEA_COLOR, "3 6", 2.5);
-    FEASTagerows.forEach((row) => {
+    ACTIVE_FEA_STAGE_ROWS.forEach((row) => {
       const feaStage = displayStateFromJointBends("FEA (CalculiX)", row.cableForceN, row.jointBendsDeg);
       nodes.push(svgNode("circle", {
         cx: frame.scaleX(row.cableForceN),
