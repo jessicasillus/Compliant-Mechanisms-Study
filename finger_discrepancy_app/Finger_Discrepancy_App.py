@@ -663,6 +663,8 @@ class FingerDiscrepancyApp:
         self.root.configure(bg=BACKGROUND)
         self._configure_style()
         self._build_layout()
+        self.root.bind("<Configure>", self._on_window_resize)
+        self._on_window_resize()
         self._update_visuals()
 
     def _configure_style(self) -> None:
@@ -738,13 +740,18 @@ class FingerDiscrepancyApp:
         mp.pack(fill="x", pady=(10, 10))
         self.summary_label = ttk.Label(mp, textvariable=self.summary_var,
                                        style="Panel.TLabel", justify="left",
-                                       font=("Consolas", 10))
-        self.summary_label.pack(anchor="w")
+                                       font=("Consolas", 10), wraplength=1100)
+        self.summary_label.pack(anchor="w", fill="x")
 
         # ── Figure ────────────────────────────────────────────────────────────
-        self.figure = Figure(figsize=(13, 10), dpi=100, facecolor=PANEL)
-        grid = self.figure.add_gridspec(3, 2, width_ratios=(1.35, 1.0),
-                                        hspace=0.48, wspace=0.30)
+        self.figure = Figure(figsize=(13.6, 10.4), dpi=100, facecolor=PANEL, constrained_layout=True)
+        self.figure.set_constrained_layout_pads(
+            w_pad=4.0 / 72.0,
+            h_pad=6.0 / 72.0,
+            wspace=0.10,
+            hspace=0.10,
+        )
+        grid = self.figure.add_gridspec(3, 2, width_ratios=(1.30, 1.0))
         self.ax_shape       = self.figure.add_subplot(grid[:, 0])
         self.ax_response    = self.figure.add_subplot(grid[0, 1])
         self.ax_discrepancy = self.figure.add_subplot(grid[1, 1])
@@ -771,9 +778,18 @@ class FingerDiscrepancyApp:
             self.table.column(c, width=115, anchor="e")
         self.table.pack(fill="x")
 
-        ttk.Label(container, textvariable=self.status_var).pack(fill="x")
+        self.status_label = ttk.Label(container, textvariable=self.status_var,
+                                      justify="left", wraplength=1100)
+        self.status_label.pack(fill="x")
 
     # ── Control callbacks ──────────────────────────────────────────────────────
+
+    def _on_window_resize(self, _event=None) -> None:
+        width = max(self.root.winfo_width() - 120, 520)
+        if hasattr(self, "summary_label"):
+            self.summary_label.configure(wraplength=width)
+        if hasattr(self, "status_label"):
+            self.status_label.configure(wraplength=width)
 
     def _set_force(self, f: float) -> None:
         self.force_var.set(float(f))
@@ -880,7 +896,9 @@ class FingerDiscrepancyApp:
         ax.set_title("Finger Shape Overlay")
         ax.set_xlabel("x [mm]")
         ax.set_ylabel("z [mm]")
-        ax.legend(loc="upper left", fontsize=8)
+        ax.tick_params(axis="both", labelsize=8.5)
+        ax.legend(loc="upper left", fontsize=7.4, framealpha=0.94,
+                  borderpad=0.35, labelspacing=0.32, handlelength=2.0)
         ax.set_aspect("equal", adjustable="box")
 
     # ── Response plot ─────────────────────────────────────────────────────────
@@ -922,11 +940,11 @@ class FingerDiscrepancyApp:
             )
             ax.plot(dense, fea_angles, color=FEA_COLOR, linewidth=1.8,
                     linestyle=":", label="FEA (CalculiX)")
-            ax.scatter(stages, fea_stage_tips,  color=FEA_COLOR,            s=55, zorder=5, label="FEA stages")
+            ax.scatter(stages, fea_stage_tips,  color=FEA_COLOR,            s=55, zorder=5, label="_nolegend_")
             ax.scatter(stages, prbm1_stage_tips,  color=ANALYTICAL_COLOR,   s=44, zorder=5,
-                       marker="^", alpha=0.85, label="1-Spring @ FEA steps")
+                       marker="^", alpha=0.85, label="_nolegend_")
             ax.scatter(stages, prbm20_stage_tips, color=TWENTY_SPRING_COLOR, s=44, zorder=5,
-                       marker="s", alpha=0.85, label="20-Spring @ FEA steps")
+                       marker="s", alpha=0.85, label="_nolegend_")
 
         # Current-force markers
         ax.scatter([cable_force_n], [analytical_display_state(cable_force_n).tip_angle_deg],
@@ -970,11 +988,14 @@ class FingerDiscrepancyApp:
             ax.plot(ef, ea, color=EXPERIMENTAL_COLOR, linewidth=1.1,
                     linestyle=":", alpha=0.55, zorder=4)
 
-        ax.set_title("Experiment vs PRBM Tip Angle")
+        ax.set_title("Experiment vs PRBM Tip Angle", pad=10, fontsize=11)
         ax.set_xlabel("Cable force [N]")
         ax.set_ylabel("Tip angle [deg]")
         ax.grid(True, alpha=0.22)
-        ax.legend(loc="lower left", fontsize=7)
+        ax.tick_params(axis="both", labelsize=8.2)
+        ax.margins(x=0.04)
+        ax.legend(loc="lower left", fontsize=6.6, framealpha=0.94,
+                  borderpad=0.35, labelspacing=0.30, handlelength=2.0)
 
     # ── Discrepancy plot ──────────────────────────────────────────────────────
 
@@ -1027,7 +1048,7 @@ class FingerDiscrepancyApp:
             rmse_20s = float(np.sqrt(np.mean(err_20s ** 2)))
             better   = "1-Spring" if rmse_1s <= rmse_20s else "20-Spring"
             ax.annotate(
-                f"Closer to FEA: {better}  |  RMSE {rmse_1s:.2f}° vs {rmse_20s:.2f}°",
+                f"Closer to FEA: {better}\nRMSE {rmse_1s:.2f}° vs {rmse_20s:.2f}°",
                 xy=(0.02, 0.96), xycoords="axes fraction", va="top", fontsize=8,
                 bbox=dict(boxstyle="round,pad=0.3", facecolor=PANEL, edgecolor=EDGE, alpha=0.92),
             )
@@ -1062,7 +1083,7 @@ class FingerDiscrepancyApp:
             fit_1s, fit_20s = experimental_fit_stats(self.exp_series)
             better = fit_1s if fit_1s.rmse_deg <= fit_20s.rmse_deg else fit_20s
             ax.annotate(
-                f"Closer overall: {better.label}  |  "
+                f"Closer overall: {better.label}\n"
                 f"RMSE {fit_1s.rmse_deg:.2f} deg vs {fit_20s.rmse_deg:.2f} deg",
                 xy=(0.02, 0.96), xycoords="axes fraction", va="top", fontsize=8,
                 bbox=dict(boxstyle="round,pad=0.3", facecolor=PANEL, edgecolor=EDGE, alpha=0.92),
@@ -1084,11 +1105,14 @@ class FingerDiscrepancyApp:
             title = "1-Spring vs 20-Spring Difference"
 
         ax.axhline(0, color="grey", linewidth=0.8, linestyle=":")
-        ax.set_title(title)
+        ax.set_title(title, pad=10, fontsize=11)
         ax.set_xlabel("Cable force [N]")
         ax.set_ylabel("|Error| [deg]")
         ax.grid(True, alpha=0.22)
-        ax.legend(loc="upper left", fontsize=7)
+        ax.tick_params(axis="both", labelsize=8.2)
+        ax.margins(x=0.04)
+        ax.legend(loc="upper right", fontsize=6.7, framealpha=0.94,
+                  borderpad=0.35, labelspacing=0.30, handlelength=2.0)
 
     # ── Table ─────────────────────────────────────────────────────────────────
 
@@ -1149,7 +1173,7 @@ class FingerDiscrepancyApp:
                    and len(self.exp_series.points) > 0)
 
         x = np.arange(N_JOINTS)
-        bar_w = 0.28
+        bar_w = 0.24
         xlabels = [
             f"J{i}\n({t:.2f} mm)"
             for i, t in enumerate(JOINT_THICKNESSES_MM, start=1)
@@ -1183,12 +1207,14 @@ class FingerDiscrepancyApp:
             title = f"Per-Joint |1-Spring − 20-Spring|  (Fc={cable_force_n:.2f} N)"
 
         ax.set_xticks(x)
-        ax.set_xticklabels(xlabels, fontsize=8)
+        ax.set_xticklabels(xlabels, fontsize=7.5)
         ax.set_xlabel("Joint (flexure thickness)")
         ax.set_ylabel("|Error| [deg]")
-        ax.set_title(title, fontsize=9)
+        ax.set_title(title, fontsize=10, pad=10)
         ax.set_ylim(bottom=0)
-        ax.legend(fontsize=7)
+        ax.tick_params(axis="y", labelsize=8.2)
+        ax.legend(fontsize=6.7, framealpha=0.94, borderpad=0.35,
+                  labelspacing=0.30, handlelength=2.0)
         ax.grid(True, alpha=0.22, axis="y")
 
     # ── Main update ───────────────────────────────────────────────────────────
@@ -1285,7 +1311,7 @@ def main(argv: list[str] | None = None) -> int:
 
     root = tk.Tk()
     app  = FingerDiscrepancyApp(root, fea_surrogate, exp_series)
-    root.minsize(1200, 1050)
+    root.minsize(1280, 1100)
     root.mainloop()
     return 0
 
