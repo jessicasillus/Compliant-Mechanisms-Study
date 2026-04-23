@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.FCBak
+*.FCStd
+*.msh
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+*_run/

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Compliant Mechanisms Study</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero card">
+        <p class="eyebrow">ME 7751 Project 2</p>
+        <h1>Compliant Finger Study</h1>
+        <p class="hero-copy">
+          This GitHub-ready build combines the paper, the desktop discrepancy app,
+          the FreeCAD source, and a browser demo that can run on GitHub Pages.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="paper/project2.pdf">Open project2.pdf</a>
+          <a class="button secondary" href="https://github.com/jessicasillus/Compliant-Mechanisms-Study/tree/main/finger_discrepancy_app">Desktop app source</a>
+          <a class="button secondary" href="https://github.com/jessicasillus/Compliant-Mechanisms-Study/tree/main/finger_sim_freecad">FreeCAD source</a>
+        </div>
+      </header>
+
+      <section class="notice-strip">
+        <strong>Browser note:</strong> this page uses bundled FEA stages and digitized experimental points.
+        Full FreeCAD regeneration still happens locally through the desktop workflow.
+      </section>
+
+      <section class="card controls-card">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Interactive Demo</p>
+            <h2>Model controls</h2>
+          </div>
+          <p class="section-copy">
+            Explore the same comparison story in the browser: 1-spring PRBM, 20-spring PRBM,
+            precomputed FEA stages, and the embedded experimental reference.
+          </p>
+        </div>
+
+        <div class="control-grid">
+          <label class="control-block">
+            <span>Cable force</span>
+            <input id="force-slider" type="range" min="0" max="20" step="0.05" value="20">
+          </label>
+
+          <label class="control-block control-inline">
+            <span>Manual value</span>
+            <input id="force-input" type="number" min="0" max="20" step="0.05" value="20">
+          </label>
+
+          <div class="toggle-group">
+            <label><input id="snap-toggle" type="checkbox"> Snap to nearest FEA stage</label>
+            <label><input id="show-fea-toggle" type="checkbox" checked> Show FEA overlay</label>
+            <label><input id="show-exp-toggle" type="checkbox" checked> Show experimental series</label>
+          </div>
+        </div>
+
+        <div class="stage-wrap">
+          <span class="stage-label">FEA stages</span>
+          <div id="stage-buttons" class="stage-buttons"></div>
+        </div>
+      </section>
+
+      <section id="metric-cards" class="metric-grid"></section>
+
+      <section class="card summary-card">
+        <div class="section-head compact">
+          <div>
+            <p class="section-eyebrow">Current Readout</p>
+            <h2>Comparison summary</h2>
+          </div>
+        </div>
+        <div id="summary-text" class="summary-text"></div>
+      </section>
+
+      <section class="plot-grid">
+        <article class="card plot-card">
+          <div class="plot-head">
+            <div>
+              <p class="section-eyebrow">Shape Overlay</p>
+              <h2>Finger geometry</h2>
+            </div>
+            <div class="legend-row">
+              <span class="legend-item"><i class="swatch analytical"></i>1-Spring</span>
+              <span class="legend-item"><i class="swatch twenty"></i>20-Spring</span>
+              <span class="legend-item fea-legend"><i class="swatch fea"></i>FEA</span>
+              <span class="legend-item exp-legend"><i class="swatch experimental"></i>Experimental</span>
+            </div>
+          </div>
+          <svg id="shape-plot" viewBox="0 0 520 340" role="img" aria-label="Finger shape overlay"></svg>
+          <p id="shape-note" class="plot-note"></p>
+        </article>
+
+        <article class="card plot-card">
+          <div class="plot-head">
+            <div>
+              <p class="section-eyebrow">Tip Response</p>
+              <h2>Tip angle versus cable force</h2>
+            </div>
+          </div>
+          <svg id="response-plot" viewBox="0 0 520 340" role="img" aria-label="Tip angle response plot"></svg>
+          <p class="plot-note">The FEA curve uses the bundled stage CSV. The browser demo mirrors the desktop app logic rather than re-running FreeCAD.</p>
+        </article>
+      </section>
+
+      <section class="plot-grid single">
+        <article class="card plot-card">
+          <div class="plot-head">
+            <div>
+              <p class="section-eyebrow">Current Error</p>
+              <h2>Per-joint discrepancy</h2>
+            </div>
+          </div>
+          <svg id="error-plot" viewBox="0 0 520 320" role="img" aria-label="Per-joint error plot"></svg>
+          <p id="error-note" class="plot-note"></p>
+        </article>
+      </section>
+
+      <section class="card table-card">
+        <div class="section-head compact">
+          <div>
+            <p class="section-eyebrow">Current State</p>
+            <h2>Discrepancy table</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Quantity</th>
+                <th>1-Spring</th>
+                <th>20-Spring</th>
+                <th>FEA</th>
+                <th>Experimental</th>
+                <th>1S - Exp</th>
+                <th>20S - Exp</th>
+              </tr>
+            </thead>
+            <tbody id="comparison-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card run-card">
+        <div class="section-head compact">
+          <div>
+            <p class="section-eyebrow">Local Workflow</p>
+            <h2>Run the full desktop app</h2>
+          </div>
+          <p class="section-copy">
+            GitHub Pages is great for the comparison dashboard, but the full Tkinter and FreeCAD workflow still runs locally.
+          </p>
+        </div>
+        <pre><code>python -m pip install -r finger_discrepancy_app/requirements.txt
+python finger_discrepancy_app/Finger_Discrepancy_App.py</code></pre>
+        <p class="run-note">
+          The large `Finger_Sim_VM2_FEM.FCStd` document is intentionally not committed because it is too large for a normal GitHub upload.
+        </p>
+      </section>
+    </div>
+
+    <script src="site.js"></script>
+  </body>
+</html>
