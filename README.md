@@ -1,6 +1,6 @@
 # Compliant Mechanisms Study
 
-This repository packages the Project 2 paper, the desktop discrepancy app, the FreeCAD/CalculiX source, and a browser demo that can be published with GitHub Pages.
+This repository packages the Project 2 paper, the desktop discrepancy app, the FreeCAD/CalculiX source, and the live browser GUI for GitHub Pages.
 
 ## Contents
 
@@ -9,11 +9,9 @@ This repository packages the Project 2 paper, the desktop discrepancy app, the F
 - [finger_sim_freecad](finger_sim_freecad): FreeCAD and CalculiX source plus the bundled FEA stage CSV
 - [index.html](index.html): browser-friendly demo for GitHub Pages
 
-## Browser Demo
+## Browser GUI
 
-Enable GitHub Pages from `Settings -> Pages` and publish from the `main` branch root.
-
-After Pages is enabled, the site will be available at:
+Live demo:
 
 `https://jessicasillus.github.io/Compliant-Mechanisms-Study/`
 
@@ -42,8 +40,3 @@ Optional:
 
 - Load a real `joint_angles.csv` from the app UI to replace the built-in digitized experimental series.
 - Install FreeCAD 1.1 if you want the app to refresh FEA results locally through `freecadcmd`.
-
-## Notes
-
-- The current `Finger_Sim_VM2_FEM.FCStd` file is about 415 MB, so it is not committed here because it exceeds normal GitHub file limits.
-- If you want the raw `.FCStd` model in the repository later, the clean options are Git LFS or attaching it to a GitHub release.
