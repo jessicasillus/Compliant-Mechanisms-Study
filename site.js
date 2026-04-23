@@ -5,17 +5,16 @@ const JOINT_THICKNESSES_MM = [3.0, 3.25, 3.25, 3.5];
 const DEFAULT_MOMENT_ARM_MM = 8.0;
 const NOMINAL_JOINT_THICKNESS_MM = 3.25;
 const NOMINAL_JOINT_STIFFNESS_NMM_PER_RAD = 50.0;
+const GUI_MAX_FORCE_N = 5.0;
 
 const ANALYTICAL_COLOR = "#c26a00";
 const TWENTY_SPRING_COLOR = "#7b2d8b";
 const FEA_COLOR = "#1f6aa5";
-const EXPERIMENTAL_COLOR = "#2a8c53";
 const DISCREPANCY_COLOR = "#b42318";
 const AXIS_COLOR = "#6b5f58";
 const GRID_COLOR = "rgba(107, 95, 88, 0.14)";
-const GUI_MAX_FORCE_N = 5.0;
 
-const FEASTagerows = [
+const FEA_STAGE_ROWS = [
   { cableForceN: 0.0, jointBendsDeg: [0.0, 0.0, 0.0, 0.0] },
   {
     cableForceN: 1.25,
@@ -33,52 +32,17 @@ const FEASTagerows = [
     cableForceN: 5.0,
     jointBendsDeg: [-24.795716449629683, -18.131323348753224, -19.103509730359235, -17.55832285046337],
   },
-  {
-    cableForceN: 10.0,
-    jointBendsDeg: [-24.795716449629683, -18.131323348753224, -19.103509730359235, -17.55832285046337],
-  },
-  {
-    cableForceN: 20.0,
-    jointBendsDeg: [-24.795716449629683, -18.131323348753224, -19.103509730359235, -17.55832285046337],
-  },
 ];
-
-const GRAPH_MOTOR_DELTAS_DEG = [0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0];
-const GRAPH_EXPERIMENTAL_JOINTS_DEG = [
-  [0.0, 11.0, 22.0, 31.5, 52.0, 64.0, 77.0, 90.0, 106.0],
-  [0.0, 8.5, 15.0, 21.0, 25.0, 31.0, 35.5, 38.5, 42.5],
-  [0.0, 9.0, 14.0, 18.0, 27.0, 31.0, 31.0, 35.0, 38.0],
-  [0.0, 6.0, 11.0, 14.0, 17.0, 24.0, 25.5, 29.0, 29.0],
-];
-
-const VA_LJ = 15e-3;
-const VA_H = 6.5e-3;
-const VA_BW = 10e-3;
-const VA_JH = [2.5e-3, 3.25e-3, 3.25e-3, 3.5e-3];
-const VA_E_EFF = 2.5e6;
-const VA_RP = 0.015;
-const VA_GAIN = 1.0;
-const VA_C_TENDON = 0.005;
-const VA_PRETENSION = 16.0;
-const VA_IJ = VA_JH.map((value) => (1.0 / 12.0) * VA_BW * value ** 3);
-const VA_LK = VA_IJ.map((value) => (VA_E_EFF * value) / VA_LJ);
-const VA_SUM_FLEX = VA_LK.reduce((sum, value) => sum + 1.0 / value, 0.0);
-const VA_DENOM = VA_H ** 2 * VA_SUM_FLEX + VA_C_TENDON;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const JOINT_NAMES = ["Joint 1", "Joint 2", "Joint 3", "Joint 4"];
-const ACTIVE_FEA_STAGE_ROWS = FEASTagerows.filter((row) => row.cableForceN <= GUI_MAX_FORCE_N);
-const FEA_FORCES = ACTIVE_FEA_STAGE_ROWS.map((row) => row.cableForceN);
-const MAX_FORCE = ACTIVE_FEA_STAGE_ROWS[ACTIVE_FEA_STAGE_ROWS.length - 1].cableForceN;
-
-const EXPERIMENTAL_SERIES = graphExperimentalSeries();
-const EXPERIMENTAL_FIT = experimentalFitStats(EXPERIMENTAL_SERIES);
+const FEA_FORCES = FEA_STAGE_ROWS.map((row) => row.cableForceN);
+const MAX_FORCE = Math.min(GUI_MAX_FORCE_N, FEA_FORCES[FEA_FORCES.length - 1]);
 
 const state = {
   force: MAX_FORCE,
   snap: false,
   showFea: true,
-  showExperimental: true,
 };
 
 const elements = {
@@ -86,7 +50,6 @@ const elements = {
   forceInput: document.getElementById("force-input"),
   snapToggle: document.getElementById("snap-toggle"),
   showFeaToggle: document.getElementById("show-fea-toggle"),
-  showExpToggle: document.getElementById("show-exp-toggle"),
   stageButtons: document.getElementById("stage-buttons"),
   metricCards: document.getElementById("metric-cards"),
   summaryText: document.getElementById("summary-text"),
@@ -97,7 +60,6 @@ const elements = {
   errorNote: document.getElementById("error-note"),
   comparisonBody: document.getElementById("comparison-body"),
   feaLegends: Array.from(document.querySelectorAll(".fea-legend")),
-  expLegends: Array.from(document.querySelectorAll(".exp-legend")),
 };
 
 function radians(value) {
@@ -131,8 +93,16 @@ function formatNumber(value, digits = 2) {
   return Number(value).toFixed(digits);
 }
 
-function formatSigned(value, digits = 2) {
-  return `${value >= 0 ? "+" : ""}${formatNumber(value, digits)}`;
+function bendMagnitude(value) {
+  return Math.abs(value);
+}
+
+function tipMagnitude(plotState) {
+  return bendMagnitude(plotState.tipAngleDeg);
+}
+
+function jointMagnitudes(plotState) {
+  return plotState.jointBendsDeg.map((value) => bendMagnitude(value));
 }
 
 function nearestStage(force) {
@@ -232,64 +202,10 @@ function interpolateFeaState(cableForceN) {
     interpolate1D(
       clampedForce,
       FEA_FORCES,
-      ACTIVE_FEA_STAGE_ROWS.map((row) => row.jointBendsDeg[jointIndex]),
+      FEA_STAGE_ROWS.map((row) => row.jointBendsDeg[jointIndex]),
     )
   ));
   return displayStateFromJointBends("FEA (CalculiX)", clampedForce, jointBendsDeg);
-}
-
-function vaDphi(deltaDeg) {
-  return radians(deltaDeg) * VA_GAIN;
-}
-
-function vaCableForceFromDelta(deltaDeg) {
-  const dphiPre = vaDphi(VA_PRETENSION);
-  const dphiTotal = dphiPre + vaDphi(deltaDeg);
-  const fcPre = (VA_RP * dphiPre) / VA_DENOM;
-  const fcTotal = (VA_RP * dphiTotal) / VA_DENOM;
-  return Math.max(0.0, fcTotal - fcPre);
-}
-
-function cableLengthMmFromDelta(deltaDeg) {
-  return 1000.0 * VA_RP * vaDphi(deltaDeg);
-}
-
-function graphExperimentalSeries() {
-  const points = GRAPH_MOTOR_DELTAS_DEG.map((deltaDeg, index) => {
-    const jointDeltasDeg = GRAPH_EXPERIMENTAL_JOINTS_DEG.map((row) => -row[index]);
-    return {
-      targetDeltaDeg: deltaDeg,
-      cableLengthMm: cableLengthMmFromDelta(deltaDeg),
-      cableForceN: vaCableForceFromDelta(deltaDeg),
-      jointDeltasDeg,
-      tipAngleDeg: jointDeltasDeg.reduce((sum, value) => sum + value, 0.0),
-    };
-  });
-  return points.sort((left, right) => left.cableForceN - right.cableForceN);
-}
-
-function closestExperimentalPoint(cableForceN) {
-  return EXPERIMENTAL_SERIES.reduce((best, point) => (
-    Math.abs(point.cableForceN - cableForceN) < Math.abs(best.cableForceN - cableForceN) ? point : best
-  ), EXPERIMENTAL_SERIES[0]);
-}
-
-function experimentalFitStats(series) {
-  const oneSpringErrors = series.map((point) => analyticalDisplayState(point.cableForceN).tipAngleDeg - point.tipAngleDeg);
-  const twentySpringErrors = series.map((point) => solve20SpringState(point.cableForceN).tipAngleDeg - point.tipAngleDeg);
-
-  function stats(label, errors) {
-    const absErrors = errors.map((value) => Math.abs(value));
-    const mae = absErrors.reduce((sum, value) => sum + value, 0.0) / absErrors.length;
-    const rmse = Math.sqrt(errors.reduce((sum, value) => sum + value * value, 0.0) / errors.length);
-    const maxAbsErr = Math.max(...absErrors);
-    return { label, maeDeg: mae, rmseDeg: rmse, maxAbsErrDeg: maxAbsErr };
-  }
-
-  return {
-    oneSpring: stats("1-Spring PRBM", oneSpringErrors),
-    twentySpring: stats("20-Spring PRBM", twentySpringErrors),
-  };
 }
 
 function svgNode(name, attributes = {}) {
@@ -344,14 +260,15 @@ function drawPlotFrame(svg, width, height, xDomain, yDomain, options) {
       stroke: GRID_COLOR,
       "stroke-width": 1,
     }));
-    nodes.push(svgNode("text", {
+    const label = svgNode("text", {
       x,
       y: height - 14,
       "text-anchor": "middle",
       "font-size": 12,
       fill: AXIS_COLOR,
-    }));
-    nodes[nodes.length - 1].textContent = formatNumber(tick, 1);
+    });
+    label.textContent = formatNumber(tick, 1);
+    nodes.push(label);
   });
 
   yTicks.forEach((tick) => {
@@ -364,14 +281,15 @@ function drawPlotFrame(svg, width, height, xDomain, yDomain, options) {
       stroke: GRID_COLOR,
       "stroke-width": 1,
     }));
-    nodes.push(svgNode("text", {
+    const label = svgNode("text", {
       x: margin.left - 10,
       y: y + 4,
       "text-anchor": "end",
       "font-size": 12,
       fill: AXIS_COLOR,
-    }));
-    nodes[nodes.length - 1].textContent = formatNumber(tick, 1);
+    });
+    label.textContent = formatNumber(tick, 1);
+    nodes.push(label);
   });
 
   nodes.push(svgNode("line", {
@@ -414,19 +332,16 @@ function drawPlotFrame(svg, width, height, xDomain, yDomain, options) {
   yLabel.textContent = options.yLabel;
   nodes.push(yLabel);
 
-  return { nodes, scaleX, scaleY, margin };
+  return { nodes, scaleX, scaleY };
 }
 
-function renderShapePlot(analytical, twentySpring, feaState, experimentalState, expPoint) {
+function renderShapePlot(analytical, twentySpring, feaState) {
   const svg = elements.shapePlot;
   const width = 520;
   const height = 340;
   const statesToDraw = [analytical, twentySpring];
   if (state.showFea && feaState) {
     statesToDraw.push(feaState);
-  }
-  if (state.showExperimental && experimentalState) {
-    statesToDraw.push(experimentalState);
   }
 
   const allPoints = [[0, 0], [BASE_BLOCK_LENGTH_MM, 0]];
@@ -461,12 +376,11 @@ function renderShapePlot(analytical, twentySpring, feaState, experimentalState, 
     yLabel: "z [mm]",
   });
   const nodes = frame.nodes;
-  const basePath = [
-    `${frame.scaleX(0)},${frame.scaleY(0)}`,
-    `${frame.scaleX(BASE_BLOCK_LENGTH_MM)},${frame.scaleY(0)}`,
-  ].join(" ");
   nodes.push(svgNode("polyline", {
-    points: basePath,
+    points: [
+      `${frame.scaleX(0)},${frame.scaleY(0)}`,
+      `${frame.scaleX(BASE_BLOCK_LENGTH_MM)},${frame.scaleY(0)}`,
+    ].join(" "),
     fill: "none",
     stroke: "#16110f",
     "stroke-width": 8,
@@ -474,11 +388,10 @@ function renderShapePlot(analytical, twentySpring, feaState, experimentalState, 
   }));
 
   function addState(plotState, color, dashArray) {
-    const polylinePoints = plotState.centerlinePointsMm
-      .map((point) => `${frame.scaleX(point[0])},${frame.scaleY(point[1])}`)
-      .join(" ");
     nodes.push(svgNode("polyline", {
-      points: polylinePoints,
+      points: plotState.centerlinePointsMm
+        .map((point) => `${frame.scaleX(point[0])},${frame.scaleY(point[1])}`)
+        .join(" "),
       fill: "none",
       stroke: color,
       "stroke-width": 3,
@@ -515,50 +428,42 @@ function renderShapePlot(analytical, twentySpring, feaState, experimentalState, 
   if (state.showFea && feaState) {
     addState(feaState, FEA_COLOR, "3 6");
   }
-  if (state.showExperimental && experimentalState) {
-    addState(experimentalState, EXPERIMENTAL_COLOR, "10 5 2 5");
-  }
 
   svg.replaceChildren(...nodes);
-  if (state.showExperimental && expPoint) {
-    elements.shapeNote.textContent = `Nearest experimental point: delta = ${formatNumber(expPoint.targetDeltaDeg, 0)} deg, Fc ~= ${formatNumber(expPoint.cableForceN, 3)} N, tip ~= ${formatNumber(expPoint.tipAngleDeg, 1)} deg`;
-  } else {
-    elements.shapeNote.textContent = "Experimental overlay is hidden. Use the toggle above to compare against the digitized reference.";
+  const noteParts = [
+    `Current force: ${formatNumber(state.force, 3)} N`,
+    `1-Spring tip bend: ${formatNumber(tipMagnitude(analytical), 2)} deg`,
+    `20-Spring tip bend: ${formatNumber(tipMagnitude(twentySpring), 2)} deg`,
+  ];
+  if (state.showFea && feaState) {
+    noteParts.push(`FEA tip bend: ${formatNumber(tipMagnitude(feaState), 2)} deg`);
   }
+  elements.shapeNote.textContent = noteParts.join("  |  ");
 }
 
-function renderResponsePlot(analytical, twentySpring, feaState, expPoint) {
+function renderResponsePlot(analytical, twentySpring, feaState) {
   const svg = elements.responsePlot;
   const width = 520;
   const height = 340;
-  const experimentalMaxForce = Math.max(...EXPERIMENTAL_SERIES.map((point) => point.cableForceN));
-  const xMax = Math.max(MAX_FORCE, experimentalMaxForce) * 1.05;
-  const denseForces = linspace(0.0, xMax, 200);
-  const analyticalPoints = denseForces.map((force) => [force, analyticalDisplayState(force).tipAngleDeg]);
-  const twentyPoints = denseForces.map((force) => [force, solve20SpringState(force).tipAngleDeg]);
-  const feaPoints = denseForces.map((force) => [force, interpolateFeaState(force).tipAngleDeg]);
+  const xMax = MAX_FORCE * 1.05;
+  const denseForces = linspace(0.0, MAX_FORCE, 200);
+  const analyticalPoints = denseForces.map((force) => [force, tipMagnitude(analyticalDisplayState(force))]);
+  const twentyPoints = denseForces.map((force) => [force, tipMagnitude(solve20SpringState(force))]);
+  const feaPoints = denseForces.map((force) => [force, tipMagnitude(interpolateFeaState(force))]);
 
   const yValues = analyticalPoints.concat(twentyPoints).map((point) => point[1]);
   if (state.showFea) {
     feaPoints.forEach((point) => yValues.push(point[1]));
   }
-  if (state.showExperimental) {
-    EXPERIMENTAL_SERIES.forEach((point) => yValues.push(point.tipAngleDeg));
-  }
-  yValues.push(analytical.tipAngleDeg, twentySpring.tipAngleDeg);
+  yValues.push(tipMagnitude(analytical), tipMagnitude(twentySpring));
   if (state.showFea && feaState) {
-    yValues.push(feaState.tipAngleDeg);
+    yValues.push(tipMagnitude(feaState));
   }
 
-  let yMin = Math.min(...yValues);
-  let yMax = Math.max(...yValues, 0.0);
-  const yPad = Math.max(8.0, 0.08 * Math.max(1.0, yMax - yMin));
-  yMin -= yPad;
-  yMax += yPad * 0.35;
-
-  const frame = drawPlotFrame(svg, width, height, [0.0, xMax], [yMin, yMax], {
+  const yMax = Math.max(5.0, ...yValues) * 1.1;
+  const frame = drawPlotFrame(svg, width, height, [0.0, xMax], [0.0, yMax], {
     xLabel: "Cable force [N]",
-    yLabel: "Tip angle [deg]",
+    yLabel: "Tip bend [deg]",
   });
   const nodes = frame.nodes;
 
@@ -578,39 +483,20 @@ function renderResponsePlot(analytical, twentySpring, feaState, expPoint) {
   addCurve(twentyPoints, TWENTY_SPRING_COLOR, "8 6", 3);
   if (state.showFea) {
     addCurve(feaPoints, FEA_COLOR, "3 6", 2.5);
-    ACTIVE_FEA_STAGE_ROWS.forEach((row) => {
+    FEA_STAGE_ROWS.forEach((row) => {
       const feaStage = displayStateFromJointBends("FEA (CalculiX)", row.cableForceN, row.jointBendsDeg);
       nodes.push(svgNode("circle", {
         cx: frame.scaleX(row.cableForceN),
-        cy: frame.scaleY(feaStage.tipAngleDeg),
+        cy: frame.scaleY(tipMagnitude(feaStage)),
         r: 4.4,
         fill: FEA_COLOR,
       }));
     });
   }
 
-  if (state.showExperimental) {
-    addCurve(
-      EXPERIMENTAL_SERIES.map((point) => [point.cableForceN, point.tipAngleDeg]),
-      EXPERIMENTAL_COLOR,
-      "4 6",
-      1.6,
-    );
-    EXPERIMENTAL_SERIES.forEach((point) => {
-      nodes.push(svgNode("circle", {
-        cx: frame.scaleX(point.cableForceN),
-        cy: frame.scaleY(point.tipAngleDeg),
-        r: 4.2,
-        fill: EXPERIMENTAL_COLOR,
-        stroke: "#ffffff",
-        "stroke-width": 1.1,
-      }));
-    });
-  }
-
   [
-    { value: analytical.tipAngleDeg, color: ANALYTICAL_COLOR },
-    { value: twentySpring.tipAngleDeg, color: TWENTY_SPRING_COLOR },
+    { value: tipMagnitude(analytical), color: ANALYTICAL_COLOR },
+    { value: tipMagnitude(twentySpring), color: TWENTY_SPRING_COLOR },
   ].forEach((marker) => {
     nodes.push(svgNode("circle", {
       cx: frame.scaleX(state.force),
@@ -623,90 +509,53 @@ function renderResponsePlot(analytical, twentySpring, feaState, expPoint) {
   if (state.showFea && feaState) {
     nodes.push(svgNode("circle", {
       cx: frame.scaleX(state.force),
-      cy: frame.scaleY(feaState.tipAngleDeg),
+      cy: frame.scaleY(tipMagnitude(feaState)),
       r: 5.2,
       fill: FEA_COLOR,
-    }));
-  }
-
-  if (state.showExperimental && expPoint) {
-    nodes.push(svgNode("circle", {
-      cx: frame.scaleX(expPoint.cableForceN),
-      cy: frame.scaleY(expPoint.tipAngleDeg),
-      r: 5.2,
-      fill: EXPERIMENTAL_COLOR,
-      stroke: "#ffffff",
-      "stroke-width": 1.4,
     }));
   }
 
   svg.replaceChildren(...nodes);
 }
 
-function renderErrorPlot(analytical, twentySpring, feaState, expPoint) {
+function renderErrorPlot(analytical, twentySpring, feaState) {
   const svg = elements.errorPlot;
   const width = 520;
   const height = 320;
   const categories = ["Tip", "J1", "J2", "J3", "J4"];
+  const analyticalJoints = jointMagnitudes(analytical);
+  const twentyJoints = jointMagnitudes(twentySpring);
   const series = [];
 
-  if (state.showExperimental && expPoint) {
-    const experimentalState = experimentalDisplayState(expPoint);
-    series.push({
-      label: "|1-Spring - Exp|",
-      color: ANALYTICAL_COLOR,
-      values: [
-        Math.abs(analytical.tipAngleDeg - experimentalState.tipAngleDeg),
-        ...analytical.jointBendsDeg.map((value, index) => Math.abs(value - experimentalState.jointBendsDeg[index])),
-      ],
-    });
-    series.push({
-      label: "|20-Spring - Exp|",
-      color: TWENTY_SPRING_COLOR,
-      values: [
-        Math.abs(twentySpring.tipAngleDeg - experimentalState.tipAngleDeg),
-        ...twentySpring.jointBendsDeg.map((value, index) => Math.abs(value - experimentalState.jointBendsDeg[index])),
-      ],
-    });
-    if (state.showFea && feaState) {
-      series.push({
-        label: "|FEA - Exp|",
-        color: FEA_COLOR,
-        values: [
-          Math.abs(feaState.tipAngleDeg - experimentalState.tipAngleDeg),
-          ...feaState.jointBendsDeg.map((value, index) => Math.abs(value - experimentalState.jointBendsDeg[index])),
-        ],
-      });
-    }
-    elements.errorNote.textContent = `Bars compare the current states against the nearest experimental point at Fc ~= ${formatNumber(expPoint.cableForceN, 3)} N.`;
-  } else if (state.showFea && feaState) {
+  if (state.showFea && feaState) {
+    const feaJoints = jointMagnitudes(feaState);
     series.push({
       label: "|1-Spring - FEA|",
       color: ANALYTICAL_COLOR,
       values: [
-        Math.abs(analytical.tipAngleDeg - feaState.tipAngleDeg),
-        ...analytical.jointBendsDeg.map((value, index) => Math.abs(value - feaState.jointBendsDeg[index])),
+        Math.abs(tipMagnitude(analytical) - tipMagnitude(feaState)),
+        ...analyticalJoints.map((value, index) => Math.abs(value - feaJoints[index])),
       ],
     });
     series.push({
       label: "|20-Spring - FEA|",
       color: TWENTY_SPRING_COLOR,
       values: [
-        Math.abs(twentySpring.tipAngleDeg - feaState.tipAngleDeg),
-        ...twentySpring.jointBendsDeg.map((value, index) => Math.abs(value - feaState.jointBendsDeg[index])),
+        Math.abs(tipMagnitude(twentySpring) - tipMagnitude(feaState)),
+        ...twentyJoints.map((value, index) => Math.abs(value - feaJoints[index])),
       ],
     });
-    elements.errorNote.textContent = "Experimental data is hidden, so the bars show each PRBM model against the current FEA state.";
+    elements.errorNote.textContent = "Bars show absolute differences in positive bend magnitudes relative to the current FEA state.";
   } else {
     series.push({
       label: "|1-Spring - 20-Spring|",
       color: DISCREPANCY_COLOR,
       values: [
-        Math.abs(analytical.tipAngleDeg - twentySpring.tipAngleDeg),
-        ...analytical.jointBendsDeg.map((value, index) => Math.abs(value - twentySpring.jointBendsDeg[index])),
+        Math.abs(tipMagnitude(analytical) - tipMagnitude(twentySpring)),
+        ...analyticalJoints.map((value, index) => Math.abs(value - twentyJoints[index])),
       ],
     });
-    elements.errorNote.textContent = "Only the two analytical models are active, so the bars show their absolute difference.";
+    elements.errorNote.textContent = "With FEA hidden, the bars show the absolute difference between the two PRBM models.";
   }
 
   const margin = { left: 52, right: 18, top: 22, bottom: 46 };
@@ -820,11 +669,7 @@ function renderErrorPlot(analytical, twentySpring, feaState, expPoint) {
   svg.replaceChildren(...nodes);
 }
 
-function experimentalDisplayState(point) {
-  return displayStateFromJointBends("Experimental", point.cableForceN, point.jointDeltasDeg);
-}
-
-function renderMetrics(analytical, twentySpring, feaState, expPoint) {
+function renderMetrics(analytical, twentySpring, feaState) {
   const cards = [
     {
       label: "Cable force",
@@ -832,34 +677,28 @@ function renderMetrics(analytical, twentySpring, feaState, expPoint) {
       note: state.snap ? "Snapped to the nearest FEA stage" : "Continuous force selection",
     },
     {
-      label: "1-Spring tip",
-      value: `${formatNumber(analytical.tipAngleDeg, 2)} deg`,
-      note: "Analytical PRBM baseline",
+      label: "1-Spring tip bend",
+      value: `${formatNumber(tipMagnitude(analytical), 2)} deg`,
+      note: "Positive bend magnitude",
     },
     {
-      label: "20-Spring tip",
-      value: `${formatNumber(twentySpring.tipAngleDeg, 2)} deg`,
-      note: "Distributed flexure surrogate",
+      label: "20-Spring tip bend",
+      value: `${formatNumber(tipMagnitude(twentySpring), 2)} deg`,
+      note: "Positive bend magnitude",
     },
   ];
 
   if (state.showFea && feaState) {
     cards.push({
-      label: "FEA tip",
-      value: `${formatNumber(feaState.tipAngleDeg, 2)} deg`,
+      label: "FEA tip bend",
+      value: `${formatNumber(tipMagnitude(feaState), 2)} deg`,
       note: "Bundled stage interpolation",
-    });
-  } else if (state.showExperimental && expPoint) {
-    cards.push({
-      label: "Experimental tip",
-      value: `${formatNumber(expPoint.tipAngleDeg, 2)} deg`,
-      note: `Nearest point at ${formatNumber(expPoint.cableForceN, 3)} N`,
     });
   } else {
     cards.push({
       label: "Model gap",
-      value: `${formatNumber(Math.abs(analytical.tipAngleDeg - twentySpring.tipAngleDeg), 2)} deg`,
-      note: "Absolute tip-angle difference",
+      value: `${formatNumber(Math.abs(tipMagnitude(analytical) - tipMagnitude(twentySpring)), 2)} deg`,
+      note: "Absolute tip-bend difference",
     });
   }
 
@@ -877,38 +716,25 @@ function renderMetrics(analytical, twentySpring, feaState, expPoint) {
   );
 }
 
-function renderSummary(analytical, twentySpring, feaState, expPoint) {
-  const fitWinner = EXPERIMENTAL_FIT.oneSpring.rmseDeg <= EXPERIMENTAL_FIT.twentySpring.rmseDeg
-    ? EXPERIMENTAL_FIT.oneSpring
-    : EXPERIMENTAL_FIT.twentySpring;
+function renderSummary(analytical, twentySpring, feaState) {
   const items = [
     `Current cable force: ${formatNumber(state.force, 3)} N`,
-    `Tip angles: 1-Spring ${formatNumber(analytical.tipAngleDeg, 2)} deg, 20-Spring ${formatNumber(twentySpring.tipAngleDeg, 2)} deg`,
+    `Tip bend magnitudes: 1-Spring ${formatNumber(tipMagnitude(analytical), 2)} deg, 20-Spring ${formatNumber(tipMagnitude(twentySpring), 2)} deg`,
+    `All bend values in this browser GUI are shown as positive magnitudes.`,
   ];
 
   if (state.showFea && feaState) {
     items.push(
-      `FEA tip: ${formatNumber(feaState.tipAngleDeg, 2)} deg, with 1-Spring minus FEA = ${formatSigned(analytical.tipAngleDeg - feaState.tipAngleDeg, 2)} deg`,
-    );
-  }
-
-  if (state.showExperimental && expPoint) {
-    items.push(
-      `Nearest experimental point: delta = ${formatNumber(expPoint.targetDeltaDeg, 0)} deg, Fc ~= ${formatNumber(expPoint.cableForceN, 3)} N, tip = ${formatNumber(expPoint.tipAngleDeg, 2)} deg`,
+      `FEA tip bend: ${formatNumber(tipMagnitude(feaState), 2)} deg`,
     );
     items.push(
-      `Experimental errors: 1-Spring ${formatSigned(analytical.tipAngleDeg - expPoint.tipAngleDeg, 2)} deg, 20-Spring ${formatSigned(twentySpring.tipAngleDeg - expPoint.tipAngleDeg, 2)} deg`,
+      `Absolute tip differences: |1-Spring - FEA| = ${formatNumber(Math.abs(tipMagnitude(analytical) - tipMagnitude(feaState)), 2)} deg, |20-Spring - FEA| = ${formatNumber(Math.abs(tipMagnitude(twentySpring) - tipMagnitude(feaState)), 2)} deg`,
     );
-    if (state.showFea && feaState) {
-      items.push(
-        `FEA minus experimental: ${formatSigned(feaState.tipAngleDeg - expPoint.tipAngleDeg, 2)} deg`,
-      );
-    }
+  } else {
+    items.push(
+      `Absolute tip difference between PRBM models: ${formatNumber(Math.abs(tipMagnitude(analytical) - tipMagnitude(twentySpring)), 2)} deg`,
+    );
   }
-
-  items.push(
-    `Overall fit to the digitized experimental series: ${fitWinner.label} is closer. RMSE = ${formatNumber(fitWinner.rmseDeg, 2)} deg, MAE = ${formatNumber(fitWinner.maeDeg, 2)} deg, max abs error = ${formatNumber(fitWinner.maxAbsErrDeg, 2)} deg.`,
-  );
 
   const list = document.createElement("ul");
   items.forEach((item) => {
@@ -919,37 +745,36 @@ function renderSummary(analytical, twentySpring, feaState, expPoint) {
   elements.summaryText.replaceChildren(list);
 }
 
-function renderTable(analytical, twentySpring, feaState, expPoint) {
-  const experimentalState = state.showExperimental && expPoint ? experimentalDisplayState(expPoint) : null;
+function renderTable(analytical, twentySpring, feaState) {
+  const analyticalJoints = jointMagnitudes(analytical);
+  const twentyJoints = jointMagnitudes(twentySpring);
+  const feaJoints = feaState ? jointMagnitudes(feaState) : null;
   const rows = [
     {
-      label: "Tip angle",
-      oneSpring: analytical.tipAngleDeg,
-      twentySpring: twentySpring.tipAngleDeg,
-      fea: feaState ? feaState.tipAngleDeg : null,
-      experimental: experimentalState ? experimentalState.tipAngleDeg : null,
+      label: "Tip bend",
+      oneSpring: tipMagnitude(analytical),
+      twentySpring: tipMagnitude(twentySpring),
+      fea: feaState ? tipMagnitude(feaState) : null,
     },
     ...JOINT_NAMES.map((name, index) => ({
       label: name,
-      oneSpring: analytical.jointBendsDeg[index],
-      twentySpring: twentySpring.jointBendsDeg[index],
-      fea: feaState ? feaState.jointBendsDeg[index] : null,
-      experimental: experimentalState ? experimentalState.jointBendsDeg[index] : null,
+      oneSpring: analyticalJoints[index],
+      twentySpring: twentyJoints[index],
+      fea: feaJoints ? feaJoints[index] : null,
     })),
   ];
 
   elements.comparisonBody.replaceChildren(
     ...rows.map((row) => {
+      const feaValue = row.fea;
       const tr = document.createElement("tr");
-      const expValue = row.experimental;
       tr.innerHTML = `
         <td>${row.label}</td>
         <td>${formatNumber(row.oneSpring, 2)}</td>
         <td>${formatNumber(row.twentySpring, 2)}</td>
-        <td>${row.fea == null ? "--" : formatNumber(row.fea, 2)}</td>
-        <td>${expValue == null ? "--" : formatNumber(expValue, 2)}</td>
-        <td>${expValue == null ? "--" : formatSigned(row.oneSpring - expValue, 2)}</td>
-        <td>${expValue == null ? "--" : formatSigned(row.twentySpring - expValue, 2)}</td>
+        <td>${feaValue == null ? "--" : formatNumber(feaValue, 2)}</td>
+        <td>${feaValue == null ? "--" : formatNumber(Math.abs(row.oneSpring - feaValue), 2)}</td>
+        <td>${feaValue == null ? "--" : formatNumber(Math.abs(row.twentySpring - feaValue), 2)}</td>
       `;
       return tr;
     }),
@@ -974,28 +799,24 @@ function syncControls() {
   elements.forceInput.value = formatNumber(state.force, 3);
   elements.snapToggle.checked = state.snap;
   elements.showFeaToggle.checked = state.showFea;
-  elements.showExpToggle.checked = state.showExperimental;
   Array.from(elements.stageButtons.children).forEach((button, index) => {
     button.classList.toggle("active", Math.abs(FEA_FORCES[index] - state.force) < 1e-6);
   });
   elements.feaLegends.forEach((node) => node.classList.toggle("hidden", !state.showFea));
-  elements.expLegends.forEach((node) => node.classList.toggle("hidden", !state.showExperimental));
 }
 
 function render() {
   const analytical = analyticalDisplayState(state.force);
   const twentySpring = solve20SpringState(state.force);
   const feaState = state.showFea ? interpolateFeaState(state.force) : null;
-  const expPoint = state.showExperimental ? closestExperimentalPoint(state.force) : null;
-  const experimentalState = state.showExperimental && expPoint ? experimentalDisplayState(expPoint) : null;
 
   syncControls();
-  renderMetrics(analytical, twentySpring, feaState, expPoint);
-  renderSummary(analytical, twentySpring, feaState, expPoint);
-  renderShapePlot(analytical, twentySpring, feaState, experimentalState, expPoint);
-  renderResponsePlot(analytical, twentySpring, feaState, expPoint);
-  renderErrorPlot(analytical, twentySpring, feaState, expPoint);
-  renderTable(analytical, twentySpring, feaState, expPoint);
+  renderMetrics(analytical, twentySpring, feaState);
+  renderSummary(analytical, twentySpring, feaState);
+  renderShapePlot(analytical, twentySpring, feaState);
+  renderResponsePlot(analytical, twentySpring, feaState);
+  renderErrorPlot(analytical, twentySpring, feaState);
+  renderTable(analytical, twentySpring, feaState);
 }
 
 function setForce(nextForce) {
@@ -1023,10 +844,6 @@ function bindEvents() {
   });
   elements.showFeaToggle.addEventListener("change", (event) => {
     state.showFea = event.target.checked;
-    render();
-  });
-  elements.showExpToggle.addEventListener("change", (event) => {
-    state.showExperimental = event.target.checked;
     render();
   });
 }

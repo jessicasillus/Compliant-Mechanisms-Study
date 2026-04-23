@@ -34,8 +34,8 @@
           </div>
           <p class="section-copy">
             Compare the 1-spring PRBM, 20-spring PRBM, bundled FEA stages,
-            and the embedded experimental reference directly in the browser.
-            The browser GUI is capped at 5 N.
+            directly in the browser. The browser GUI is capped at 5 N,
+            and bend values are shown as positive magnitudes.
           </p>
         </div>
 
@@ -53,7 +53,6 @@
           <div class="toggle-group">
             <label><input id="snap-toggle" type="checkbox"> Snap to nearest FEA stage</label>
             <label><input id="show-fea-toggle" type="checkbox" checked> Show FEA overlay</label>
-            <label><input id="show-exp-toggle" type="checkbox" checked> Show experimental series</label>
           </div>
         </div>
 
@@ -86,7 +85,6 @@
               <span class="legend-item"><i class="swatch analytical"></i>1-Spring</span>
               <span class="legend-item"><i class="swatch twenty"></i>20-Spring</span>
               <span class="legend-item fea-legend"><i class="swatch fea"></i>FEA</span>
-              <span class="legend-item exp-legend"><i class="swatch experimental"></i>Experimental</span>
             </div>
           </div>
           <svg id="shape-plot" viewBox="0 0 520 340" role="img" aria-label="Finger shape overlay"></svg>
@@ -101,7 +99,7 @@
             </div>
           </div>
           <svg id="response-plot" viewBox="0 0 520 340" role="img" aria-label="Tip angle response plot"></svg>
-          <p class="plot-note">The FEA curve uses the bundled stage CSV. The browser demo mirrors the desktop app logic rather than re-running FreeCAD.</p>
+          <p class="plot-note">The FEA curve uses the bundled stage CSV up to 5 N. All bend values shown here are positive magnitudes.</p>
         </article>
       </section>
 
@@ -133,9 +131,8 @@
                 <th>1-Spring</th>
                 <th>20-Spring</th>
                 <th>FEA</th>
-                <th>Experimental</th>
-                <th>1S - Exp</th>
-                <th>20S - Exp</th>
+                <th>|1S - FEA|</th>
+                <th>|20S - FEA|</th>
               </tr>
             </thead>
             <tbody id="comparison-body"></tbody>
