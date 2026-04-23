@@ -22,7 +22,7 @@ This repository packages the full ME 7751 Project 2 submission for the tendon-dr
 
 Live site:
 
-`https://jessicasillus.github.io/Compliant-Mechanisms-Study/`
+[GUI app](https://jessicasillus.github.io/Compliant-Mechanisms-Study/)
 
 The GitHub Pages app is the lightweight presentation layer for the project. It compares the 1-spring PRBM, the 20-spring PRBM, and the bundled FEA stages on a shared cable-force axis. The current browser GUI is intentionally limited to the 0 to 5 N range because that is the cleanest validated comparison window from the staged FEA export, and all displayed bend values are shown as positive magnitudes for consistency.
 
